@@ -1,0 +1,16 @@
+{
+  "description": "Tells Claude when the session's repo is linked to Orbit (.orbit.json), so it tracks multi-step work unprompted.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

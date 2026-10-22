@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "orbit": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/dist/index.js"],
+      "env": {
+        "ORBIT_API_URL": "${ORBIT_API_URL:-https://api.orbitorg.com/v2}",
+        "ORBIT_APP_URL": "${ORBIT_APP_URL:-https://app.orbitorg.com}",
+        "CLAUDE_PLUGIN_DATA": "${CLAUDE_PLUGIN_DATA}"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "sarv",
+  "owner": {
+    "name": "Sarv"
+  },
+  "metadata": {
+    "description": "Sarv's Claude Code plugins."
+  },
+  "plugins": [
+    {
+      "name": "orbit",
+      "source": "./plugins/orbit",
+      "description": "Claude tracks its own multi-step work in Orbit: a parent item, one subtask per step, statuses and progress comments."
+    }
+  ]
+}
