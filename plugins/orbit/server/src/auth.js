@@ -153,7 +153,10 @@ export function createAuth({ config, store, fetchImpl = fetch, openBrowser = def
         accept(data);
         connectedListeners.forEach((fn) => fn());
         log('info', 'Orbit connected');
-        sendPage(res, 200, 'Connected to Orbit', 'Claude Code can now use Orbit as you. You can close this tab and go back to Claude Code.');
+        // On to Orbit's Connected apps page, which lists this new connection, rather than leaving
+        // the browser on this computer's 127.0.0.1 address.
+        res.writeHead(302, { location: `${config.appUrl}/u/0/connected-apps`, 'cache-control': 'no-store' });
+        res.end();
       } catch (err) {
         log('warn', 'Orbit sign-in failed', { error: err.message });
         sendPage(res, 400, 'Not connected', `${err.message} Ask Claude to connect to Orbit again.`);

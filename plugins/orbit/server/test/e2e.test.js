@@ -105,8 +105,9 @@ test('first call: not connected → sign-in link; after Allow the same call work
   const consentUrl = first.text.split('\n').pop();
   assert.ok(consentUrl.startsWith(`${APP_URL}/u/0/connect/claude-code?`));
 
-  const page = await fetch(orbit.allow(consentUrl));
-  assert.match(await page.text(), /Connected to Orbit/);
+  const page = await fetch(orbit.allow(consentUrl), { redirect: 'manual' });
+  assert.equal(page.status, 302);
+  assert.equal(page.headers.get('location'), `${APP_URL}/u/0/connected-apps`);
 
   const second = await server.callTool('orbit_whoami');
   assert.equal(second.isError, false);

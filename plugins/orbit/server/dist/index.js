@@ -35640,7 +35640,8 @@ function createAuth({ config: config2, store, fetchImpl = fetch, openBrowser = d
         accept(data);
         connectedListeners.forEach((fn2) => fn2());
         log("info", "Orbit connected");
-        sendPage(res, 200, "Connected to Orbit", "Claude Code can now use Orbit as you. You can close this tab and go back to Claude Code.");
+        res.writeHead(302, { location: `${config2.appUrl}/u/0/connected-apps`, "cache-control": "no-store" });
+        res.end();
       } catch (err) {
         log("warn", "Orbit sign-in failed", { error: err.message });
         sendPage(res, 400, "Not connected", `${err.message} Ask Claude to connect to Orbit again.`);

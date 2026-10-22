@@ -32,12 +32,12 @@ test('no connection: the call returns at once with a sign-in link, and opens the
   assert.equal(opened.length, 1, 'a pending sign-in is reused, not reopened');
 });
 
-test('clicking Allow connects: the refresh token is stored, the next call just works', async () => {
-  const { auth, opened, orbit, store } = setup();
+test('clicking Allow connects: the browser goes on to Connected apps, the next call just works', async () => {
+  const { auth, opened, orbit, store, config } = setup();
   await auth.getAccessToken().catch(() => {});
-  const res = await fetch(orbit.allow(opened[0]));
-  assert.equal(res.status, 200);
-  assert.match(await res.text(), /Connected to Orbit/);
+  const res = await fetch(orbit.allow(opened[0]), { redirect: 'manual' });
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.get('location'), `${config.appUrl}/u/0/connected-apps`);
   assert.equal(store.token, orbit.currentRefresh);
   assert.match(await auth.getAccessToken(), /^orb_at_/);
   assert.equal(orbit.refreshCalls, 0, 'the code exchange already gave us an access token');
