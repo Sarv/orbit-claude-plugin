@@ -10,6 +10,7 @@ import listProjects from './listProjects.js';
 import resolveUrl from './resolveUrl.js';
 import getProjectConfig from './getProjectConfig.js';
 import searchWorkItems from './searchWorkItems.js';
+import listJobs from './listJobs.js';
 import getWorkItem from './getWorkItem.js';
 import listComments from './listComments.js';
 import createWorkItem from './createWorkItem.js';
@@ -20,7 +21,7 @@ import addComment from './addComment.js';
 import logout from './logout.js';
 
 export const TOOLS = [
-  whoami, listProjects, resolveUrl, getProjectConfig, searchWorkItems, getWorkItem, listComments,
+  whoami, listProjects, resolveUrl, getProjectConfig, searchWorkItems, listJobs, getWorkItem, listComments,
   createWorkItem, createWorkItems, updateWorkItem, setStatus, addComment,
   logout, // only for /orbit:logout
 ];

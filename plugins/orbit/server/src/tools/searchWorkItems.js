@@ -56,6 +56,8 @@ export default {
     text: z.string().optional().describe('Text to match in the item key or title.'),
     parent: z.string().optional().describe('An item key or id: only its subtasks / child items.'),
     item_type: itemTypeField.optional().describe('Only this type. By default every type except milestones.'),
+    created_by_claude: z.boolean().optional().describe('true: only items created through Claude ("via Claude"). '
+      + 'To see Claude\'s jobs with their steps and progress, use orbit_list_jobs.'),
     limit: z.number().int().min(1).max(50).default(20).describe('How many items (default 20, max 50).'),
   }),
   readOnly: true,
@@ -73,10 +75,12 @@ export default {
       ...(args.text && { search: args.text }),
       ...(args.item_type && { item_types: [args.item_type] }),
       ...(parent && { [CHILD_FILTER[parent.item_type]]: parent.id }),
+      ...(args.created_by_claude && { created_via: 'claude' }),
     };
     const [data, names] = await Promise.all([client.call('/work-items/list', body), resolvers.memberNames(p)]);
     const items = data?.items || [];
-    const describe = `${state.label ? `${state.label} ` : ''}items${who.label}${parent ? ` under ${parent.item_key}` : ''}${args.text ? ` matching "${args.text}"` : ''}`;
+    const describe = `${state.label ? `${state.label} ` : ''}items${args.created_by_claude ? ' created via Claude' : ''}${who.label}`
+      + `${parent ? ` under ${parent.item_key}` : ''}${args.text ? ` matching "${args.text}"` : ''}`;
     if (!items.length) return `No ${describe} in ${p.projectName}.`;
     const states = await resolvers.stateIndex(p, items.map((it) => it.item_type));
     return [

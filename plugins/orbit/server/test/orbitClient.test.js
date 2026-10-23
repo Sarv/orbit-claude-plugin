@@ -56,6 +56,22 @@ test('a 429 waits for Retry-After (capped) and retries once', async () => {
   assert.deepEqual(waits, [7000]);
 });
 
+test("Orbit's hourly cap on new items is never retried: waiting seconds won't help", async () => {
+  const quota = json(429, { message: 'Claude has created a lot of items', details: { error_code: 'CONNECTION_CREATE_QUOTA' } }, { 'retry-after': '3600' });
+  const { c, waits, calls } = client([quota]);
+  await assert.rejects(c.call('/work-items/create'), {
+    kind: 'rate_limited', code: 'CONNECTION_CREATE_QUOTA',
+    message: /hourly limit on new items from Claude is reached, so nothing was created\. Don't create more Orbit items for now/,
+  });
+  assert.deepEqual(waits, []);
+  assert.equal(calls.length, 1);
+});
+
+test('a route Orbit keeps from Claude connections reads as such, not as a permissions problem', async () => {
+  const { c } = client([json(403, { message: "Claude Code can't do this in Orbit.", details: { error_code: 'CONNECTION_FORBIDDEN' } })]);
+  await assert.rejects(c.call('/work-items/delete'), { kind: 'forbidden', message: /^Orbit doesn't let Claude Code do this, so nothing was changed/ });
+});
+
 test('errors are classified: definite failures carry Orbit\'s message; no answer is "unknown"', async () => {
   const cases = [
     [json(403, { message: 'nope', details: { error_code: 'NOT_PROJECT_MEMBER' } }), 'forbidden', /don't have permission/],

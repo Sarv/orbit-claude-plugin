@@ -55,6 +55,8 @@ export function createFakeOrbit() {
     codes: new Map(), refresh: null, access: new Set(), calls: [],
     items: structuredClone(ITEMS), comments: structuredClone(COMMENTS), seq: ITEMS.length,
     activities: [], // state changes only: { item_id, actor, via, to }
+    customFields: {}, // item type → field definitions, as /custom-fields/list returns them
+    canViewCustomFields: true, // false = a CONTRIBUTOR: Orbit lists no fields to them
   };
   const issue = () => {
     state.refresh = `orb_rt_C1.${crypto.randomBytes(12).toString('base64url')}`;
@@ -73,13 +75,28 @@ export function createFakeOrbit() {
     state.activities.push({ item_id: it.id, actor: { user_id: USER.userId }, via: 'claude', to: target.id });
   }
 
-  // The fixed backend (plan 2.6): a non-member assignee fails the item.
+  // The fixed backend (plan 2.6): a non-member assignee fails the item. Custom fields are checked on
+  // every create: a required one with neither a value nor a default fails it, and the message
+  // names the fields only to someone who can see them.
   function newItem(input) {
     if (!input.title || input.title.length < 3) throw Object.assign(new Error('title is too short'), { status: 400 });
     const userIds = toUserIds(input.assignees_arr || []);
     if (userIds.some((u) => !u)) throw Object.assign(new Error(`Not active members of this project: ${input.assignees_arr.join(', ')}`), { status: 400 });
+    const sentFields = new Set((input.custom_fields || []).map((f) => f.field_id));
+    const missing = (state.customFields[input.item_type] || [])
+      .filter((f) => f.is_required && !sentFields.has(f.id) && f.default_value == null).map((f) => f.name);
+    if (missing.length) {
+      throw Object.assign(new Error(state.canViewCustomFields ? `Missing required custom fields: ${missing.join(', ')}` : 'Missing required custom fields the caller cannot view'), {
+        status: 400,
+        display: state.canViewCustomFields ? `Fill in the required fields: ${missing.join(', ')}.` : "This project has required fields you don't have access to. Ask a project admin to give them a default value.",
+      });
+    }
     if (input.state_id && !STATES[input.item_type]?.some((st) => st.id === input.state_id)) {
       throw Object.assign(new Error(`Invalid state_id for ${input.item_type}`), { status: 400 });
+    }
+    // Labels are per item type: Orbit refuses one that belongs to another type.
+    if ((input.label_ids || []).some((id) => !(LABELS[input.item_type] || []).some((l) => l.id === id))) {
+      throw Object.assign(new Error(`Invalid label_ids for ${input.item_type}`), { status: 400 });
     }
     const stateId = input.state_id || DEFAULT_STATE[input.item_type]; // milestones have no states
     state.seq += 1;
@@ -90,8 +107,10 @@ export function createFakeOrbit() {
       assignees_arr: (input.assignees_arr || []).map(Number), assignees_user_arr: userIds,
       ...Object.fromEntries(PARENT_FIELDS.filter((f) => input[f]).map((f) => [f, input[f]])),
       ...(input.priority_id !== undefined && { priority_id: input.priority_id }),
+      ...(input.label_ids && { label_ids: input.label_ids }),
       ...(input.due_date && { due_date: input.due_date }),
       ...(input.metadata && { metadata: input.metadata }),
+      ...(input.custom_fields && { custom_fields: input.custom_fields }),
       created_by: { user_id: USER.userId, emp_id: ORG.empId }, created_via: 'claude', created_at: Date.now(), updated_at: Date.now(),
     };
     state.items.push(it);
@@ -137,6 +156,7 @@ export function createFakeOrbit() {
       case '/v2/states/list': return ok({ states: STATES[body.item_type] || [], default_state_ids: { ...DEFAULT_STATE } });
       case '/v2/labels/list': return ok({ labels: LABELS[body.item_type] || [] });
       case '/v2/priorities/list': return ok({ priorities: [{ id: 20, name: 'High' }, { id: 50, name: 'None' }] });
+      case '/v2/custom-fields/list': return ok({ fields: state.canViewCustomFields ? (state.customFields[body.item_type] || []) : [] });
       case '/v2/projects/P1/members/list': return ok({ members: MEMBERS, total: 2, hasMore: false });
       case '/v2/work-items/get': {
         const it = body.item_id ? item(body.item_id) : state.items.find((i) => i.item_key === body.item_key);
@@ -153,6 +173,7 @@ export function createFakeOrbit() {
         if (body.item_types) items = items.filter((i) => body.item_types.includes(i.item_type));
         if (body.assignee_ids) items = items.filter((i) => i.assignees_user_arr.some((u) => body.assignee_ids.includes(u)));
         if (body.author_ids) items = items.filter((i) => body.author_ids.includes(i.created_by?.user_id));
+        if (body.created_via) items = items.filter((i) => i.created_via === body.created_via);
         if (body.created_at_from) items = items.filter((i) => (i.created_at || 0) >= body.created_at_from);
         if (body.lifecycle === 'open') items = items.filter((i) => i.state_group < 4);
         for (const f of PARENT_FIELDS) if (body[f]) items = items.filter((i) => i[f] === body[f]);
@@ -165,7 +186,8 @@ export function createFakeOrbit() {
           const it = newItem(body);
           return ok({ id: it.id, item_key: it.item_key, item_seq: state.seq, item_type: it.item_type, created_at: it.created_at }, 201);
         } catch (err) {
-          return fail(err.status || 500, err.message, 'VALIDATION_ERROR');
+          // A single create answers with the display message; bulk create's per-item `error` is the technical one.
+          return fail(err.status || 500, err.display || err.message, 'VALIDATION_ERROR');
         }
       case '/v2/work-items/bulk-create': {
         // Whole-batch shape check first, as the real route does.

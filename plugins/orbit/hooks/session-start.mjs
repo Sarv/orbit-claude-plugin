@@ -5,8 +5,11 @@
 //
 // .orbit.json comes from the repo, so the only value passed on is the project, and only when it
 // looks like what /orbit:link writes (an Orbit project URL or org/workspace/project). The skill
-// reads the rest of the file itself.
+// reads the rest of the file itself; `"confirm_plan": true` (exactly true) only adds a fixed
+// sentence. From the branch name, only an item key of the linked project's own prefix is passed on
+// (jatin-142-csv-export → JATIN-142), never the name itself.
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -33,6 +36,20 @@ function findLinkFile(start) {
   }
 }
 
+// The linked project's key prefix is its slug (the last part of the URL or of org/ws/project), so
+// "release-2026" or "fix-12" never pass for a project called "web".
+function branchItemKey(dir, project) {
+  const slug = project.replace(/\/+$/, '').split('/').pop();
+  let branch;
+  try {
+    branch = execFileSync('git', ['branch', '--show-current'], { cwd: dir, encoding: 'utf8', timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return null; // no git, not a repository, or a detached HEAD
+  }
+  const m = branch.match(new RegExp(`(?:^|[^A-Za-z0-9])${slug.replace(/[-_]/g, '[-_]')}-(\\d{1,9})(?![0-9])`, 'i'));
+  return m ? `${slug.toUpperCase()}-${m[1]}` : null;
+}
+
 function contextFor(file) {
   let link;
   try {
@@ -50,8 +67,12 @@ function contextFor(file) {
       + `Claude Code needs Node.js ${MIN_NODE_MAJOR} or newer. Don't track work in Orbit; if the user asks for Orbit, `
       + 'tell them to install a current Node.js LTS and restart Claude Code.';
   }
+  const key = branchItemKey(path.dirname(file), project);
   return `${linked} For a task with two or more separate pieces of work, track it in Orbit with the orbit-tracking `
-    + 'skill. Skip it for questions and quick edits.';
+    + 'skill. Skip it for questions and quick edits.'
+    + (link.confirm_plan === true ? ' This repo asks for a plan preview: before creating any Orbit item, show the user '
+      + 'the parent and the steps, and wait for their OK.' : '')
+    + (key ? ` The current branch is named after ${key}: unless the user names another item, track the work under ${key} (read it first).` : '');
 }
 
 try {

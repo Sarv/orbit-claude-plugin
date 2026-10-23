@@ -86,6 +86,10 @@ export function createResolvers({ config, client }) {
     async () => (await client.call('/labels/list', { ...context(p), item_type: itemType }))?.labels || []);
   const priorities = () => cached('priorities',
     async () => (await client.call('/priorities/list', {}))?.priorities || [], Infinity);
+  // The project's custom fields for one item type. [] when it has none, and also when the user
+  // may not see them: Orbit lists none to a CONTRIBUTOR.
+  const customFields = (p, itemType) => cached(`fields:${p.projectId}:${itemType}`,
+    async () => (await client.call('/custom-fields/list', { ...context(p), item_type: itemType }))?.fields || []);
 
   const members = (p) => cached(`members:${p.projectId}`, async () => {
     const all = [];
@@ -127,6 +131,6 @@ export function createResolvers({ config, client }) {
   const clearCache = () => cache.clear();
 
   return {
-    clearCache, me, orgs, project, context, states, labels, priorities, members, item, stateIndex, memberNames, projectUrl, itemUrl,
+    clearCache, me, orgs, project, context, states, labels, priorities, customFields, members, item, stateIndex, memberNames, projectUrl, itemUrl,
   };
 }

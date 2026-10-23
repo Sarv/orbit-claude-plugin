@@ -1,18 +1,24 @@
 import { z } from 'zod';
 import { markdownToHtml } from '../markdown.js';
 import { stepsUnder } from '../policy.js';
-import { newRequestId, isUnknown, resolveAssignees, findCreated } from '../writes.js';
+import { newRequestId, isUnknown, resolveAssignees, resolveLabels, resolvePriority, resolveCustomFields, findCreated } from '../writes.js';
 import { list, truncate } from '../format.js';
-import { projectField, itemField, titleField, markdownField, assigneesField } from './shared.js';
+import { MAX_STEPS_PER_JOB } from '../config.js';
+import { OrbitError } from '../errors.js';
+import {
+  projectField, itemField, titleField, markdownField, assigneesField, fieldsField, labelsField, priorityField, labelsAndPriority, unseenNote,
+} from './shared.js';
 
-// Orbit takes 100 per call; a lower cap keeps a runaway plan from flooding a project.
-const MAX_STEPS = 25;
+// What one call may carry (Orbit takes at most 25 per bulk create on a Claude connection). The
+// real limit is MAX_STEPS_PER_JOB Claude steps under one parent, checked against what's there.
+const MAX_STEPS_PER_CALL = 25;
 
 export default {
   name: 'orbit_create_work_items',
   title: 'Create the steps of a job',
-  description: 'Create the steps of a job under one named item, in a single call: one item per plan step '
-    + `(at most ${MAX_STEPS}; aim for 15 or fewer and merge small steps). How they attach depends on the named item: `
+  description: 'Create the steps of a job under one named item, in a single call: one item per plan step. A job has '
+    + `at most ${MAX_STEPS_PER_JOB} steps from Claude, counting the ones already under the item: plan ${MAX_STEPS_PER_JOB} `
+    + 'or fewer, and group smaller pieces into one step with the details in its description. How they attach depends on the named item: '
     + 'tasks under a story, feature or epic; subtasks under a task that isn\'t itself a subtask (it may sit under a '
     + 'story, feature or epic). A subtask can\'t hold steps: then nothing is created, and you track the job on that '
     + 'subtask with comments. If the parent already has children (orbit_get_work_item lists them), create only the '
@@ -24,8 +30,14 @@ export default {
     steps: z.array(z.object({
       title: titleField,
       description: markdownField.optional().describe('Markdown, optional: a line or two about the step.'),
-    })).min(1).max(MAX_STEPS),
+    })).min(1).max(MAX_STEPS_PER_CALL),
     assignees: assigneesField.default(['me']),
+    labels: labelsField.optional().describe('Label names for every step. Steps are tasks: pass .orbit.json\'s '
+      + 'defaults.task.labels and any the user asked for; orbit_get_project_config lists the task labels.'),
+    priority: priorityField.optional().describe('A priority name such as "High", for every step. Pass .orbit.json\'s '
+      + 'defaults.task.priority when it is set, unless the user asked for another.'),
+    fields: fieldsField.optional().describe('Custom field values for every step, by field name (see orbit_create_work_item). '
+      + 'Steps are tasks: pass .orbit.json\'s defaults.task.fields and any the user gave; never guess one.'),
   }),
   readOnly: false,
   async handler(args, orbit) {
@@ -38,7 +50,23 @@ export default {
         + `subtasks, so no steps were created. Track this job on ${parent.item_key} itself: comment as you finish `
         + 'each step (orbit_add_comment) and move it with orbit_set_status.';
     }
-    const people = await resolveAssignees(p, args.assignees, resolvers);
+    const [people, labelIds, priorityId, customFields, existing] = await Promise.all([
+      resolveAssignees(p, args.assignees, resolvers),
+      args.labels ? resolveLabels(p, attach.itemType, args.labels, resolvers) : undefined,
+      args.priority ? resolvePriority(args.priority, resolvers) : undefined,
+      resolveCustomFields(p, attach.itemType, args.fields, resolvers),
+      client.call('/work-items/children', { ...resolvers.context(p), item_id: parent.id }),
+    ]);
+    // People's own items under the parent don't count: a story with 12 team tasks still takes Claude's steps.
+    const claudeSteps = (existing?.children || []).filter((c) => c.created_via === 'claude').length;
+    if (claudeSteps + args.steps.length > MAX_STEPS_PER_JOB) {
+      const room = Math.max(MAX_STEPS_PER_JOB - claudeSteps, 0);
+      throw new OrbitError('invalid', `Nothing was sent: a job has at most ${MAX_STEPS_PER_JOB} steps from Claude, and `
+        + `${parent.item_key} ${claudeSteps ? `already has ${claudeSteps}` : 'has none yet'}, so ${room ? `${room} more fit` : 'no more fit'}. `
+        + (room
+          ? `Merge these ${args.steps.length} into ${room} or fewer, with the details in each step's description.`
+          : 'Fold the extra work into the existing steps (comment on them) instead of adding new ones.'));
+    }
     const requestId = newRequestId();
     const items = args.steps.map((step, i) => ({
       item_type: attach.itemType,
@@ -46,11 +74,14 @@ export default {
       ...(step.description && { description: markdownToHtml(step.description) }),
       assignees_arr: people.map((m) => m.empId),
       [attach.field]: parent.id,
+      ...(labelIds && { label_ids: labelIds }),
+      ...(priorityId !== undefined && { priority_id: priorityId }),
+      ...(customFields.values.length && { custom_fields: customFields.values }),
       metadata: { mcp_request_id: requestId, mcp_index: i },
     }));
 
     const what = (n) => `${n} of ${items.length} steps as ${attach.kind} of ${parent.item_key} "${truncate(parent.title, 100)}"`
-      + `, ${people.length ? `assigned to ${list(people.map((m) => m.name))}` : 'unassigned'}`;
+      + `, ${people.length ? `assigned to ${list(people.map((m) => m.name))}` : 'unassigned'}${labelsAndPriority(args)}`;
     const ok = (i, key) => `#${i + 1} ✓ ${key} ${truncate(args.steps[i].title, 100)}`;
     const unconfirmed = (i) => `#${i + 1} ? not confirmed: ${truncate(args.steps[i].title, 100)}`;
     const parentLink = resolvers.itemUrl(p, parent);
@@ -101,7 +132,7 @@ export default {
         ...(failed.length ? [`${failed.join(', ')} failed; the others exist. Retry only those, in a new call, and only if the `
           + 'error is about something you sent (a title, a name) and you fixed it. Otherwise tell the user.'] : []),
         ...(created + failed.length < items.length ? ["Don't create the unconfirmed steps again."] : []),
-        `Parent: ${parentLink}`,
+        `Parent: ${parentLink}${unseenNote(customFields.unseen)}`,
       ].join('\n'),
     };
   },

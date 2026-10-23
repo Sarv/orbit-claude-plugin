@@ -1,9 +1,11 @@
 import { z } from 'zod';
 import { markdownToHtml } from '../markdown.js';
 import { parentField } from '../policy.js';
-import { newRequestId, isUnknown, resolveAssignees, resolvePriority, dayToEpoch, findCreated } from '../writes.js';
+import { newRequestId, isUnknown, resolveAssignees, resolvePriority, resolveLabels, resolveCustomFields, dayToEpoch, findCreated } from '../writes.js';
 import { list, truncate } from '../format.js';
-import { projectField, titleField, markdownField, assigneesField, dayField } from './shared.js';
+import {
+  projectField, titleField, markdownField, assigneesField, dayField, fieldsField, labelsField, priorityField, labelsAndPriority, unseenNote,
+} from './shared.js';
 
 export default {
   name: 'orbit_create_work_item',
@@ -22,9 +24,11 @@ export default {
       + 'or epic, or a task that isn\'t itself a subtask (which makes the new task its subtask). Omit for a '
       + 'top-level item.'),
     assignees: assigneesField.default(['me']),
-    priority: z.string().trim().min(1).optional().describe('A priority name such as "High".'),
+    labels: labelsField.optional(),
+    priority: priorityField.optional(),
     start_date: dayField.optional().describe('YYYY-MM-DD'),
     due_date: dayField.optional().describe('YYYY-MM-DD'),
+    fields: fieldsField.optional(),
   }),
   readOnly: false,
   async handler(args, orbit) {
@@ -32,9 +36,11 @@ export default {
     const p = await resolvers.project(args.project);
     const parent = args.parent ? await resolvers.item(p, args.parent) : null;
     const field = parent ? parentField(args.item_type, parent) : null;
-    const [people, priorityId] = await Promise.all([
+    const [people, labelIds, priorityId, customFields] = await Promise.all([
       resolveAssignees(p, args.assignees, resolvers),
+      args.labels ? resolveLabels(p, args.item_type, args.labels, resolvers) : undefined,
       args.priority ? resolvePriority(args.priority, resolvers) : undefined,
+      resolveCustomFields(p, args.item_type, args.fields, resolvers),
     ]);
     const requestId = newRequestId();
     const body = {
@@ -44,14 +50,18 @@ export default {
       ...(args.description && { description: markdownToHtml(args.description) }),
       assignees_arr: people.map((m) => m.empId),
       ...(field && { [field]: parent.id }),
+      ...(labelIds && { label_ids: labelIds }),
       ...(priorityId !== undefined && { priority_id: priorityId }),
       ...(args.start_date && { start_date: dayToEpoch(args.start_date) }),
       ...(args.due_date && { due_date: dayToEpoch(args.due_date) }),
+      ...(customFields.values.length && { custom_fields: customFields.values }),
       metadata: { mcp_request_id: requestId, mcp_index: 0 },
     };
 
     const summary = (key) => `${key} [${args.item_type}] "${truncate(args.title, 120)}"${parent ? ` under ${parent.item_key}` : ''}, `
-      + `${people.length ? `assigned to ${list(people.map((m) => m.name))}` : 'unassigned'}: ${resolvers.itemUrl(p, { item_type: args.item_type, item_key: key })}`;
+      + `${people.length ? `assigned to ${list(people.map((m) => m.name))}` : 'unassigned'}${labelsAndPriority(args)}: `
+      + `${resolvers.itemUrl(p, { item_type: args.item_type, item_key: key })}`
+      + unseenNote(customFields.unseen);
 
     const startedAt = Date.now();
     try {

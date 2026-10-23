@@ -1,6 +1,6 @@
 {
   "name": "orbit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Claude tracks its own multi-step work in Orbit: a parent item, one subtask per step, statuses and progress comments. Signs in through the browser once.",
   "author": {
     "name": "Sarv"

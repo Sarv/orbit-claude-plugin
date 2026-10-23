@@ -10,6 +10,10 @@
 import os from 'node:os';
 import path from 'node:path';
 
+// At most this many steps from Claude under one parent, so a job stays readable on the board.
+// The steps tool quotes it; skills/orbit-tracking/SKILL.md says the number too, so change both.
+export const MAX_STEPS_PER_JOB = 5;
+
 const trimSlash = (url) => String(url).replace(/\/+$/, '');
 // A Claude Code version that doesn't know a .mcp.json placeholder passes it through as literal
 // text (e.g. "${CLAUDE_PLUGIN_DATA}"); treat that as unset rather than as a URL or a folder name.

@@ -7,6 +7,12 @@ import { OrbitError } from './errors.js';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const MAX_RETRY_AFTER_S = 30;
 
+// Orbit's hourly cap on new items from one connection: waiting seconds won't help, so never resent.
+const CREATE_QUOTA = 'CONNECTION_CREATE_QUOTA';
+const QUOTA_MESSAGE = "Orbit's hourly limit on new items from Claude is reached, so nothing was created. Don't create "
+  + 'more Orbit items for now; tell the user, and carry on with the coding.';
+const errorCodeOf = async (res) => (await res.clone().json().catch(() => null))?.details?.error_code;
+
 export function createOrbitClient({ config, auth, fetchImpl = fetch, wait = sleep }) {
   async function send(path, body, token, timeoutMs) {
     try {
@@ -29,10 +35,16 @@ export function createOrbitClient({ config, auth, fetchImpl = fetch, wait = slee
     if ([502, 503, 504].includes(res.status) || (res.status >= 500 && !message)) {
       throw new OrbitError('unknown', `Orbit didn't answer properly (HTTP ${res.status}).`, extra);
     }
+    if (res.status === 403 && extra.code === 'CONNECTION_FORBIDDEN') {
+      // Not the user's permissions: a Claude connection may call only what Orbit lists for it.
+      throw new OrbitError('forbidden', "Orbit doesn't let Claude Code do this, so nothing was changed. Don't retry; "
+        + 'tell the user.', extra);
+    }
     if (res.status === 403) {
       throw new OrbitError('forbidden', "Orbit refused: you don't have permission to do that in this project, so nothing "
         + "was changed. Don't retry; tell the user.", extra);
     }
+    if (res.status === 429 && extra.code === CREATE_QUOTA) throw new OrbitError('rate_limited', QUOTA_MESSAGE, extra);
     if (res.status === 404) throw new OrbitError('not_found', message || 'Not found in Orbit.', extra);
     if (res.status === 429) {
       throw new OrbitError('rate_limited', 'Orbit is busy (too many requests), so nothing was saved. Carry on, and retry '
@@ -49,7 +61,7 @@ export function createOrbitClient({ config, auth, fetchImpl = fetch, wait = slee
       res = await send(path, body, await auth.refreshNow(), timeoutMs);
       if (res.status === 401) throw await auth.startSignIn('ended');
     }
-    if (res.status === 429) {
+    if (res.status === 429 && (await errorCodeOf(res)) !== CREATE_QUOTA) {
       // A 429 means Orbit did nothing, so one retry is safe for any request.
       const seconds = Math.min(Number(res.headers.get('retry-after')) || 5, MAX_RETRY_AFTER_S);
       await wait(seconds * 1000);

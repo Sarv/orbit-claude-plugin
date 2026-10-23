@@ -2496,24 +2496,24 @@ function getDiscriminatedOption(union2, value) {
     map2 = discriminatorMap(internals.def);
     internals.bag.optionsMap = map2;
   }
-  const option = map2.get(value);
-  if (option === null)
+  const option2 = map2.get(value);
+  if (option2 === null)
     throw new Error(`Ambiguous discriminator value "${String(value)}"`);
-  return option;
+  return option2;
 }
 function discriminatorMap(def) {
   const map2 = /* @__PURE__ */ new Map();
-  for (const option of def.options) {
-    const values = option._zod.propValues?.[def.discriminator];
+  for (const option2 of def.options) {
+    const values = option2._zod.propValues?.[def.discriminator];
     if (!values || values.size === 0)
-      throw new Error(`Invalid discriminated union option at index "${def.options.indexOf(option)}"`);
+      throw new Error(`Invalid discriminated union option at index "${def.options.indexOf(option2)}"`);
     for (const value of values) {
       if (map2.has(value)) {
         if (value !== void 0)
           throw new Error(`Duplicate discriminator value "${String(value)}"`);
         map2.set(value, null);
       } else {
-        map2.set(value, option);
+        map2.set(value, option2);
       }
     }
   }
@@ -3695,7 +3695,7 @@ var init_schemas = __esm({
       defineLazyInternal(inst, "optout", (zod) => zod.def.options.some((o) => o._zod.optout === "optional") ? "optional" : void 0);
       defineLazyInternal(inst, "values", (zod) => {
         if (zod.def.options.every((o) => o._zod.values)) {
-          return new Set(zod.def.options.flatMap((option) => Array.from(option._zod.values)));
+          return new Set(zod.def.options.flatMap((option2) => Array.from(option2._zod.values)));
         }
         return void 0;
       });
@@ -3713,8 +3713,8 @@ var init_schemas = __esm({
         }
         let async = false;
         const results = [];
-        for (const option of def.options) {
-          const result = option._zod.run({
+        for (const option2 of def.options) {
+          const result = option2._zod.run({
             value: payload.value,
             issues: []
           }, ctx);
@@ -3744,8 +3744,8 @@ var init_schemas = __esm({
         }
         let async = false;
         const results = [];
-        for (const option of def.options) {
-          const result = option._zod.run({
+        for (const option2 of def.options) {
+          const result = option2._zod.run({
             value: payload.value,
             issues: []
           }, ctx);
@@ -3770,10 +3770,10 @@ var init_schemas = __esm({
       defineLazyInternal(inst, "propValues", (zod) => {
         const propValues = {};
         let undefinedCount = 0;
-        for (const option of zod.def.options) {
-          const pv = option._zod.propValues;
+        for (const option2 of zod.def.options) {
+          const pv = option2._zod.propValues;
           if (!pv || Object.keys(pv).length === 0)
-            throw new Error(`Invalid discriminated union option at index "${zod.def.options.indexOf(option)}"`);
+            throw new Error(`Invalid discriminated union option at index "${zod.def.options.indexOf(option2)}"`);
           if (pv[zod.def.discriminator]?.has(void 0))
             undefinedCount++;
           for (const [k2, v] of Object.entries(pv)) {
@@ -3789,8 +3789,8 @@ var init_schemas = __esm({
           propValues[zod.def.discriminator]?.delete(void 0);
         return propValues;
       });
-      def.options.forEach((option, i) => {
-        const propShape = rawShape(option._zod.def);
+      def.options.forEach((option2, i) => {
+        const propShape = rawShape(option2._zod.def);
         if (propShape && !Object.prototype.hasOwnProperty.call(propShape, def.discriminator)) {
           throw new Error(`Invalid discriminated union option at index "${i}"`);
         }
@@ -14191,8 +14191,8 @@ function generateDiscriminatedUnionCheck(doc, ctx, def, accessor) {
   doc.write(`let ${outputVar};`);
   let firstBranch = true;
   const claimed = /* @__PURE__ */ new Set();
-  for (const option of def.options) {
-    const values = option._zod.propValues?.[def.discriminator];
+  for (const option2 of def.options) {
+    const values = option2._zod.propValues?.[def.discriminator];
     if (!values || values.size === 0) {
       throw new ZodCompileUnsupportedError("discriminated union option without static discriminator values");
     }
@@ -14206,7 +14206,7 @@ function generateDiscriminatedUnionCheck(doc, ctx, def, accessor) {
     const prefix = firstBranch ? "if" : "else if";
     doc.write(`${prefix} (${conditions.join(" || ")}) {`);
     doc.indented((d) => {
-      const branchOutput = generateCheck(d, ctx, option, accessor);
+      const branchOutput = generateCheck(d, ctx, option2, accessor);
       d.write(`${outputVar} = ${branchOutput};`);
     });
     doc.write(`}`);
@@ -15847,14 +15847,14 @@ function compactTypeUnion(schema) {
   if (!Array.isArray(options) || options.length === 0 || schema.type !== void 0)
     return;
   const types = [];
-  for (const option of options) {
-    if (!option || typeof option !== "object")
+  for (const option2 of options) {
+    if (!option2 || typeof option2 !== "object")
       return;
-    compactTypeUnion(option);
-    const keys = Object.keys(option);
+    compactTypeUnion(option2);
+    const keys = Object.keys(option2);
     if (keys.length !== 1 || keys[0] !== "type")
       return;
-    const type = option.type;
+    const type = option2.type;
     for (const member of Array.isArray(type) ? type : [type]) {
       if (typeof member !== "string")
         return;
@@ -16142,8 +16142,8 @@ function isTransforming(_schema, _ctx) {
     return false;
   }
   if (def.type === "union") {
-    for (const option of def.options) {
-      if (isTransforming(option, ctx))
+    for (const option2 of def.options) {
+      if (isTransforming(option2, ctx))
         return true;
     }
     return false;
@@ -30919,7 +30919,7 @@ var init_ajvProvider_CEoC_sr = __esm({
           if (properties.length === 0) return;
           const valid = gen.name("valid");
           for (const prop of properties) {
-            if (hasDefault(prop)) applyPropertySchema(prop);
+            if (hasDefault2(prop)) applyPropertySchema(prop);
             else {
               gen.if((0, code_1.propertyInData)(gen, data, prop, it2.opts.ownProperties));
               applyPropertySchema(prop);
@@ -30929,7 +30929,7 @@ var init_ajvProvider_CEoC_sr = __esm({
             cxt.it.definedProperties.add(prop);
             cxt.ok(valid);
           }
-          function hasDefault(prop) {
+          function hasDefault2(prop) {
             return it2.opts.useDefaults && !it2.compositeRule && schema[prop].default !== void 0;
           }
           function applyPropertySchema(prop) {
@@ -35311,9 +35311,10 @@ function loadConfig(env = process.env) {
     signInTimeoutMs: 10 * 6e4
   };
 }
-var trimSlash, setting;
+var MAX_STEPS_PER_JOB, trimSlash, setting;
 var init_config = __esm({
   "src/config.js"() {
+    MAX_STEPS_PER_JOB = 5;
     trimSlash = (url2) => String(url2).replace(/\/+$/, "");
     setting = (value) => value && !value.includes("${") ? value : void 0;
   }
@@ -35718,9 +35719,13 @@ function createOrbitClient({ config: config2, auth, fetchImpl = fetch, wait = sl
     if ([502, 503, 504].includes(res.status) || res.status >= 500 && !message) {
       throw new OrbitError("unknown", `Orbit didn't answer properly (HTTP ${res.status}).`, extra);
     }
+    if (res.status === 403 && extra.code === "CONNECTION_FORBIDDEN") {
+      throw new OrbitError("forbidden", "Orbit doesn't let Claude Code do this, so nothing was changed. Don't retry; tell the user.", extra);
+    }
     if (res.status === 403) {
       throw new OrbitError("forbidden", "Orbit refused: you don't have permission to do that in this project, so nothing was changed. Don't retry; tell the user.", extra);
     }
+    if (res.status === 429 && extra.code === CREATE_QUOTA) throw new OrbitError("rate_limited", QUOTA_MESSAGE, extra);
     if (res.status === 404) throw new OrbitError("not_found", message || "Not found in Orbit.", extra);
     if (res.status === 429) {
       throw new OrbitError("rate_limited", "Orbit is busy (too many requests), so nothing was saved. Carry on, and retry this call once at your next step.", extra);
@@ -35734,7 +35739,7 @@ function createOrbitClient({ config: config2, auth, fetchImpl = fetch, wait = sl
       res = await send(path4, body, await auth.refreshNow(), timeoutMs);
       if (res.status === 401) throw await auth.startSignIn("ended");
     }
-    if (res.status === 429) {
+    if (res.status === 429 && await errorCodeOf(res) !== CREATE_QUOTA) {
       const seconds = Math.min(Number(res.headers.get("retry-after")) || 5, MAX_RETRY_AFTER_S);
       await wait(seconds * 1e3);
       res = await send(path4, body, await auth.getAccessToken(), timeoutMs);
@@ -35743,12 +35748,15 @@ function createOrbitClient({ config: config2, auth, fetchImpl = fetch, wait = sl
   }
   return { call };
 }
-var sleep3, MAX_RETRY_AFTER_S;
+var sleep3, MAX_RETRY_AFTER_S, CREATE_QUOTA, QUOTA_MESSAGE, errorCodeOf;
 var init_orbitClient = __esm({
   "src/orbitClient.js"() {
     init_errors3();
     sleep3 = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     MAX_RETRY_AFTER_S = 30;
+    CREATE_QUOTA = "CONNECTION_CREATE_QUOTA";
+    QUOTA_MESSAGE = "Orbit's hourly limit on new items from Claude is reached, so nothing was created. Don't create more Orbit items for now; tell the user, and carry on with the coding.";
+    errorCodeOf = async (res) => (await res.clone().json().catch(() => null))?.details?.error_code;
   }
 });
 
@@ -35834,6 +35842,10 @@ function createResolvers({ config: config2, client }) {
     async () => (await client.call("/priorities/list", {}))?.priorities || [],
     Infinity
   );
+  const customFields = (p, itemType) => cached2(
+    `fields:${p.projectId}:${itemType}`,
+    async () => (await client.call("/custom-fields/list", { ...context(p), item_type: itemType }))?.fields || []
+  );
   const members2 = (p) => cached2(`members:${p.projectId}`, async () => {
     const all = [];
     for (let from = 0; from < MAX_MEMBERS; from += 100) {
@@ -35872,6 +35884,7 @@ function createResolvers({ config: config2, client }) {
     states,
     labels,
     priorities,
+    customFields,
     members: members2,
     item,
     stateIndex,
@@ -36042,8 +36055,226 @@ var init_resolveUrl = __esm({
   }
 });
 
+// src/writes.js
+import crypto3 from "node:crypto";
+async function resolveAssignees(p, refs, resolvers) {
+  if (!refs.length) return [];
+  const [members2, me2] = await Promise.all([resolvers.members(p), resolvers.me()]);
+  const found = /* @__PURE__ */ new Map();
+  const problems = [];
+  for (const ref of refs) {
+    const who = String(ref).trim().toLowerCase();
+    let matches;
+    if (who === "me") {
+      matches = members2.filter((m) => m.userId === me2.userId);
+      if (!matches.length) problems.push(`you aren't a member of ${p.projectName}`);
+    } else {
+      const byEmail = members2.filter((m) => m.orgEmail?.toLowerCase() === who);
+      matches = byEmail.length ? byEmail : members2.filter((m) => [m.displayName, m.fullName].some((n) => n?.trim().toLowerCase() === who));
+      if (matches.length > 1) {
+        problems.push(`"${ref}" matches several members (${list(matches.map(memberName))}); use their email`);
+      } else if (!matches.length) {
+        const close = members2.filter((m) => `${m.displayName || ""} ${m.fullName || ""}`.toLowerCase().includes(who));
+        const suggest = close.slice(0, 5).map((m) => m.orgEmail ? `${memberName(m)} <${m.orgEmail}>` : memberName(m));
+        problems.push(`"${ref}" isn't a member of ${p.projectName}${suggest.length ? ` (did you mean ${list(suggest)}?)` : ""}`);
+      }
+    }
+    if (matches.length === 1) {
+      const m = matches[0];
+      found.set(m.userId, { empId: m.empId, userId: m.userId, name: m.userId === me2.userId ? "you" : memberName(m) });
+    }
+  }
+  if (problems.length) {
+    throw new OrbitError("invalid", `Nothing was sent: ${problems.join("; ")}. orbit_get_project_config lists the members.`);
+  }
+  return [...found.values()];
+}
+async function resolvePriority(name, resolvers) {
+  const priorities = await resolvers.priorities();
+  const match = priorities.find((x2) => x2.name.toLowerCase() === name.trim().toLowerCase());
+  if (!match) throw new OrbitError("invalid", `There is no priority called "${name}"; use one of ${priorities.map((x2) => x2.name).join(", ")}.`);
+  return match.id;
+}
+async function resolveLabels(p, itemType, names2, resolvers) {
+  const labels = await resolvers.labels(p, itemType);
+  const missing = [];
+  const ids = names2.map((name) => {
+    const match = labels.find((l3) => l3.name.toLowerCase() === name.trim().toLowerCase());
+    if (!match) missing.push(`"${name}"`);
+    return match?.id;
+  });
+  if (missing.length) {
+    throw new OrbitError("invalid", `Nothing was sent: ${p.projectName} has no ${itemType} label ${missing.join(", ")}. ${itemType} labels: ${labels.map((l3) => l3.name).join(", ") || "none"}.`);
+  }
+  return [...new Set(ids)];
+}
+function fieldHint(def) {
+  if (def.field_type !== "single_select" && def.field_type !== "multi_select") return FIELD_KINDS[def.field_type] || def.field_type;
+  const labels = optionLabels(def);
+  return `${FIELD_KINDS[def.field_type]}: ${labels.slice(0, MAX_OPTIONS_SHOWN).join(", ")}${labels.length > MAX_OPTIONS_SHOWN ? ", \u2026" : ""}`;
+}
+async function fieldValue(def, raw, p, resolvers) {
+  const bad = (what) => ({ problem: `${def.name} takes ${what}, not ${JSON.stringify(raw)}` });
+  switch (def.field_type) {
+    case "text":
+      return typeof raw === "string" ? { value: raw.trim() } : bad("text");
+    case "number": {
+      const n = typeof raw === "number" ? raw : Number(String(raw).trim());
+      return String(raw).trim() !== "" && Number.isFinite(n) ? { value: n } : bad("a number");
+    }
+    case "boolean": {
+      const yes = ["true", "yes"], no = ["false", "no"];
+      const s = String(raw).trim().toLowerCase();
+      return yes.includes(s) ? { value: true } : no.includes(s) ? { value: false } : bad("yes or no");
+    }
+    case "date": {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(raw))) return bad("a date (YYYY-MM-DD)");
+      try {
+        return { value: dayToEpoch(String(raw)) };
+      } catch (err) {
+        return { problem: `${def.name}: ${err.message}` };
+      }
+    }
+    case "single_select": {
+      const o = typeof raw === "string" ? option(def, raw) : null;
+      return o ? { value: o.id } : { problem: `${JSON.stringify(raw)} isn't an option of ${def.name} (${fieldHint(def)})` };
+    }
+    case "multi_select": {
+      const labels = Array.isArray(raw) ? raw : [raw];
+      const found = labels.map((l3) => option(def, l3));
+      const unknown2 = labels.filter((_2, i) => !found[i]);
+      return unknown2.length ? { problem: `${unknown2.map((l3) => JSON.stringify(l3)).join(", ")} isn't an option of ${def.name} (${fieldHint(def)})` } : { value: [...new Set(found.map((o) => o.id))] };
+    }
+    case "user": {
+      if (typeof raw !== "string") return bad("a project member");
+      const [person] = await resolveAssignees(p, [raw], resolvers);
+      return { value: person.empId };
+    }
+    default:
+      return { problem: `${def.name} is a ${def.field_type === "attachment" ? "file" : def.field_type} field, which Claude can't set` };
+  }
+}
+async function resolveCustomFields(p, itemType, fields, resolvers) {
+  const defs = await resolvers.customFields(p, itemType);
+  const given = Object.entries(fields || {});
+  if (!defs.length) return { values: [], unseen: given.map(([name]) => name) };
+  const byName = new Map(defs.map((d) => [d.name.trim().toLowerCase(), d]));
+  const values = [];
+  const problems = [];
+  for (const [name, raw] of given) {
+    const def = byName.get(name.trim().toLowerCase());
+    if (!def) {
+      problems.push(`"${name}" isn't a ${itemType} field in ${p.projectName} (fields: ${list(defs.map((d) => d.name))})`);
+      continue;
+    }
+    const out = await fieldValue(def, raw, p, resolvers);
+    if (out.problem) problems.push(out.problem);
+    else values.push({ field_id: def.id, value: out.value });
+  }
+  const sent = new Set(values.map((v) => v.field_id));
+  const missing = defs.filter((d) => d.is_required && !hasDefault(d) && !sent.has(d.id) && !given.some(([n]) => byName.get(n.trim().toLowerCase()) === d));
+  if (missing.length) {
+    problems.push(`${p.projectName} needs these ${itemType} fields, which have no default: ${missing.map((d) => `${d.name} (${fieldHint(d)})`).join("; ")}. Ask the user for the values (never guess), then pass them in "fields"`);
+  }
+  if (problems.length) throw new OrbitError("invalid", `Nothing was sent: ${problems.join("; ")}.`);
+  return { values, unseen: [] };
+}
+function dayToEpoch(day2) {
+  const [y2, m, d] = day2.split("-").map(Number);
+  const date5 = new Date(y2, m - 1, d);
+  if (date5.getFullYear() !== y2 || date5.getMonth() !== m - 1 || date5.getDate() !== d) {
+    throw new OrbitError("invalid", `"${day2}" isn't a real date (use YYYY-MM-DD).`);
+  }
+  return date5.getTime();
+}
+async function findCreated({ config: config2, client, resolvers }, p, { requestId, count, startedAt, itemType, parentField: parentField2, parentId }) {
+  try {
+    await sleep4(config2.confirmDelayMs);
+    const me2 = await resolvers.me();
+    const listed = await client.call("/work-items/list", {
+      ...resolvers.context(p),
+      author_ids: [me2.userId],
+      created_at_from: startedAt - CLOCK_SLACK_MS,
+      item_types: [itemType],
+      ...parentField2 && { [parentField2]: parentId },
+      from: 0,
+      size: count * 2,
+      sort_by: "created_at",
+      sort_order: "desc"
+    });
+    const candidates = await Promise.all((listed?.items || []).map((c) => client.call("/work-items/get", { ...resolvers.context(p), item_id: c.id }).catch(() => null)));
+    const found = /* @__PURE__ */ new Map();
+    for (const it2 of candidates) {
+      const m = it2?.metadata;
+      if (m?.mcp_request_id === requestId && Number.isInteger(m.mcp_index)) found.set(m.mcp_index, it2);
+    }
+    return found;
+  } catch (err) {
+    log("warn", "could not check what an unknown create left behind", { error: err.message });
+    return null;
+  }
+}
+async function postComment({ config: config2, client, resolvers }, p, item, html) {
+  const startedAt = Date.now();
+  try {
+    await client.call("/work-items/comments/add", { ...resolvers.context(p), item_id: item.id, content: html });
+    return "posted";
+  } catch (err) {
+    if (!isUnknown(err)) throw err;
+  }
+  try {
+    await sleep4(config2.confirmDelayMs);
+    const [me2, data] = await Promise.all([
+      resolvers.me(),
+      client.call("/work-items/comments/list", { ...resolvers.context(p), item_id: item.id, from: 0, size: 20, sort_order: "desc" })
+    ]);
+    const text = htmlToText(html);
+    const landed = (data?.comments || []).some((c) => c.author?.user_id === me2.userId && Number(c.created_at) >= startedAt - CLOCK_SLACK_MS && htmlToText(c.content) === text);
+    return landed ? "found" : "not_confirmed";
+  } catch (err) {
+    log("warn", "could not check whether an unknown comment landed", { error: err.message });
+    return "not_confirmed";
+  }
+}
+async function retryOnceIfUnknown(fn2) {
+  try {
+    return await fn2();
+  } catch (err) {
+    if (!isUnknown(err)) throw err;
+    log("info", "unknown outcome on an update; retrying once", { error: err.message });
+    return fn2();
+  }
+}
+var sleep4, CLOCK_SLACK_MS, newRequestId, isUnknown, memberName, FIELD_KINDS, MAX_OPTIONS_SHOWN, optionLabels, hasDefault, option;
+var init_writes = __esm({
+  "src/writes.js"() {
+    init_errors3();
+    init_format();
+    init_log();
+    sleep4 = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    CLOCK_SLACK_MS = 6e4;
+    newRequestId = () => crypto3.randomUUID();
+    isUnknown = (err) => err instanceof OrbitError && err.kind === "unknown";
+    memberName = (m) => m.displayName || m.fullName || m.orgEmail || "a member";
+    FIELD_KINDS = {
+      text: "text",
+      number: "a number",
+      date: "a date (YYYY-MM-DD)",
+      boolean: "yes or no",
+      single_select: "one of",
+      multi_select: "any of",
+      user: "a project member",
+      attachment: "a file"
+    };
+    MAX_OPTIONS_SHOWN = 15;
+    optionLabels = (def) => (def.options || []).map((o) => o.label);
+    hasDefault = (def) => def.default_value !== null && def.default_value !== void 0;
+    option = (def, label) => (def.options || []).find((o) => o.label.toLowerCase() === String(label).trim().toLowerCase() || o.id === String(label).trim());
+  }
+});
+
 // src/tools/shared.js
-var projectField, itemField, itemTypeField, titleField, markdownField, assigneesField, dayField;
+var projectField, itemField, itemTypeField, titleField, markdownField, assigneesField, dayField, labelsField, priorityField, labelsAndPriority, unseenNote, fieldsField;
 var init_shared = __esm({
   "src/tools/shared.js"() {
     init_zod();
@@ -36059,21 +36290,51 @@ var init_shared = __esm({
       `Who to assign: "me" (the developer you work for), or a project member's email (safest) or name as Orbit shows it. A name that matches no one, or several people, changes nothing and returns suggestions. Name other people only when the developer asked for them.`
     );
     dayField = external_exports.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD");
+    labelsField = external_exports.array(external_exports.string().trim().min(1)).min(1).max(20).describe(
+      "Label names, among the item type's labels (orbit_get_project_config lists them; labels differ per item type). Pass the matching item type's labels from .orbit.json (defaults.<item type>.labels) and any the user asked for."
+    );
+    priorityField = external_exports.string().trim().min(1).describe(
+      `A priority name such as "High". Pass .orbit.json's defaults.<item type>.priority when it is set, unless the user asked for another.`
+    );
+    labelsAndPriority = ({ labels, priority }) => [
+      labels?.length && `, labels ${labels.join(", ")}`,
+      priority && `, priority ${priority}`
+    ].filter(Boolean).join("");
+    unseenNote = (names2) => names2.length ? `
+Not set: ${names2.join(", ")}. Orbit doesn't show you this project's custom fields; they got the project's defaults, if any.` : "";
+    fieldsField = external_exports.record(external_exports.string(), external_exports.union([external_exports.string(), external_exports.number(), external_exports.boolean(), external_exports.array(external_exports.string())])).describe(
+      `Custom field values by field name, e.g. {"Client": "Acme", "Release": "2026-11-01"}: a select takes its option label (a list for multi-select), a person field "me" or a member's email, a date YYYY-MM-DD. Pass the matching item type's values from .orbit.json (defaults.<item type>.fields) and any the user gave; never guess one. orbit_get_project_config lists the fields, which are required and their defaults.`
+    );
   }
 });
 
 // src/tools/getProjectConfig.js
+function defaultText(f, members2) {
+  const v = f.default_value;
+  const label = (id) => f.options?.find((o) => o.id === id)?.label || id;
+  if (f.field_type === "single_select") return label(v);
+  if (f.field_type === "multi_select") return (Array.isArray(v) ? v : [v]).map(label).join(", ");
+  if (f.field_type === "date") return day(v);
+  if (f.field_type === "boolean") return v ? "yes" : "no";
+  if (f.field_type === "user") {
+    const m = members2.find((x2) => String(x2.empId) === String(v));
+    return m ? m.displayName || m.fullName : "a member";
+  }
+  return `"${v}"`;
+}
 var MAX_MEMBERS_SHOWN, getProjectConfig_default;
 var init_getProjectConfig = __esm({
   "src/tools/getProjectConfig.js"() {
     init_zod();
     init_resolvers();
+    init_writes();
+    init_format();
     init_shared();
     MAX_MEMBERS_SHOWN = 50;
     getProjectConfig_default = {
       name: "orbit_get_project_config",
       title: "Get project setup",
-      description: "Get a project's setup for one work-item type: its states (each with its group: backlog, unstarted, started, completed or cancelled), labels, priorities and members. Call it when you need exact names: a label, a priority, a state you haven't seen, or a person you can't name exactly. Not needed for started / completed / cancelled / review, which orbit_set_status resolves itself. States and labels differ per item type; priorities and members don't.",
+      description: "Get a project's setup for one work-item type: its states (each with its group: backlog, unstarted, started, completed or cancelled), labels, custom fields (which are required, their defaults and choices), priorities and members. Call it when you need exact names: a label, a custom field, a priority, a state you haven't seen, or a person you can't name exactly. Not needed for started / completed / cancelled / review, which orbit_set_status resolves itself. States, labels and custom fields differ per item type; priorities and members don't.",
       inputSchema: external_exports.object({
         project: projectField,
         item_type: itemTypeField.default("task").describe("Which item type's states and labels (default task).")
@@ -36081,9 +36342,10 @@ var init_getProjectConfig = __esm({
       readOnly: true,
       async handler({ project, item_type: itemType }, { resolvers }) {
         const p = await resolvers.project(project);
-        const [stateData, labels, priorities, members2, me2] = await Promise.all([
+        const [stateData, labels, customFields, priorities, members2, me2] = await Promise.all([
           resolvers.states(p, itemType),
           resolvers.labels(p, itemType),
+          resolvers.customFields(p, itemType),
           resolvers.priorities(),
           resolvers.members(p),
           resolvers.me()
@@ -36093,6 +36355,11 @@ var init_getProjectConfig = __esm({
         const lines = [`${p.projectName} (${p.orgSlug}/${p.workspaceSlug}/${p.projectSlug}) \u2014 ${itemType} settings`];
         lines.push(`States: ${states.map((s) => `${s.name} (${s.group}${s.id === defaultState ? ", default" : ""})`).join(" \xB7 ") || "none"}`);
         lines.push(`Labels: ${labels.map((l3) => l3.name).join(", ") || "none"}`);
+        lines.push(customFields.length ? "Custom fields:" : "Custom fields: none you can see");
+        for (const f of customFields) {
+          const notes = [f.is_required && "required", hasDefault(f) && `default ${defaultText(f, members2)}`].filter(Boolean);
+          lines.push(`- ${f.name}: ${fieldHint(f)}${notes.length ? ` (${notes.join(", ")})` : ""}`);
+        }
         lines.push(`Priorities: ${priorities.map((x2) => x2.name).join(", ")}`);
         lines.push(`Members (${members2.length}):`);
         for (const m of members2.slice(0, MAX_MEMBERS_SHOWN)) {
@@ -36157,6 +36424,7 @@ var init_searchWorkItems = __esm({
         text: external_exports.string().optional().describe("Text to match in the item key or title."),
         parent: external_exports.string().optional().describe("An item key or id: only its subtasks / child items."),
         item_type: itemTypeField.optional().describe("Only this type. By default every type except milestones."),
+        created_by_claude: external_exports.boolean().optional().describe(`true: only items created through Claude ("via Claude"). To see Claude's jobs with their steps and progress, use orbit_list_jobs.`),
         limit: external_exports.number().int().min(1).max(50).default(20).describe("How many items (default 20, max 50).")
       }),
       readOnly: true,
@@ -36177,11 +36445,12 @@ var init_searchWorkItems = __esm({
           ...who.ids && { assignee_ids: who.ids },
           ...args.text && { search: args.text },
           ...args.item_type && { item_types: [args.item_type] },
-          ...parent && { [CHILD_FILTER[parent.item_type]]: parent.id }
+          ...parent && { [CHILD_FILTER[parent.item_type]]: parent.id },
+          ...args.created_by_claude && { created_via: "claude" }
         };
         const [data, names2] = await Promise.all([client.call("/work-items/list", body), resolvers.memberNames(p)]);
         const items = data?.items || [];
-        const describe3 = `${state.label ? `${state.label} ` : ""}items${who.label}${parent ? ` under ${parent.item_key}` : ""}${args.text ? ` matching "${args.text}"` : ""}`;
+        const describe3 = `${state.label ? `${state.label} ` : ""}items${args.created_by_claude ? " created via Claude" : ""}${who.label}${parent ? ` under ${parent.item_key}` : ""}${args.text ? ` matching "${args.text}"` : ""}`;
         if (!items.length) return `No ${describe3} in ${p.projectName}.`;
         const states = await resolvers.stateIndex(p, items.map((it2) => it2.item_type));
         return [
@@ -36189,6 +36458,89 @@ var init_searchWorkItems = __esm({
           ...items.map((it2) => itemLine(it2, { states, names: names2 })),
           `Open one at ${resolvers.projectUrl(p)}/work-items/<KEY>`
         ].join("\n");
+      }
+    };
+  }
+});
+
+// src/tools/listJobs.js
+function groupJobs(items) {
+  const byId = new Map(items.map((i) => [i.id, i]));
+  const hasSteps = new Set(items.map(directParent).filter((id) => id && byId.has(id)));
+  const jobs = /* @__PURE__ */ new Map();
+  const job = (id) => jobs.get(id) || jobs.set(id, { anchor: byId.get(id) || null, steps: [] }).get(id);
+  for (const it2 of items) {
+    const parentId = directParent(it2);
+    if (hasSteps.has(it2.id) || !parentId) job(it2.id);
+    else job(parentId).steps.push(it2);
+  }
+  return [...jobs.entries()].map(([id, j2]) => ({ id, ...j2 }));
+}
+var PARENT_FIELDS, directParent, SCANNED, MAX_STEPS_SHOWN, finished, listJobs_default;
+var init_listJobs = __esm({
+  "src/tools/listJobs.js"() {
+    init_zod();
+    init_format();
+    init_resolvers();
+    init_shared();
+    PARENT_FIELDS = ["parent_id", "story_id", "feature_id", "epic_id"];
+    directParent = (it2) => PARENT_FIELDS.map((f) => it2[f]).find(Boolean) || null;
+    SCANNED = 100;
+    MAX_STEPS_SHOWN = 8;
+    finished = (it2) => ["completed", "cancelled"].includes(groupName(it2.state_group));
+    listJobs_default = {
+      name: "orbit_list_jobs",
+      title: "List Claude's jobs",
+      description: 'List the jobs Claude is tracking for the user in a project, newest first: each parent item with its steps and progress ("1 of 3 steps done"). Call it before creating a parent for new work: if an open job is clearly the same work (e.g. after a session restart), continue it instead of creating a duplicate; if unsure, ask the user in one line. /orbit:status uses it too.',
+      inputSchema: external_exports.object({
+        project: projectField,
+        state: external_exports.enum(["open", "all"]).default("open").describe('"open" (default): jobs with anything not done yet; "all" also finished ones.'),
+        limit: external_exports.number().int().min(1).max(20).default(10).describe("How many jobs (default 10).")
+      }),
+      readOnly: true,
+      async handler({ project, state, limit }, { client, resolvers }) {
+        const p = await resolvers.project(project);
+        const me2 = await resolvers.me();
+        const data = await client.call("/work-items/list", {
+          ...resolvers.context(p),
+          created_via: "claude",
+          author_ids: [me2.userId],
+          item_types: ["epic", "feature", "story", "task"],
+          from: 0,
+          size: SCANNED,
+          sort_by: "created_at",
+          sort_order: "desc"
+        });
+        let jobs = groupJobs(data?.items || []);
+        const missing = jobs.filter((j2) => !j2.anchor).map((j2) => j2.id);
+        if (missing.length) {
+          const anchors = await client.call("/work-items/list", {
+            ...resolvers.context(p),
+            item_ids: missing,
+            item_types: ["epic", "feature", "story", "task"],
+            from: 0,
+            size: missing.length
+          });
+          const byId = new Map((anchors?.items || []).map((a) => [a.id, a]));
+          jobs = jobs.map((j2) => j2.anchor ? j2 : { ...j2, anchor: byId.get(j2.id) || null }).filter((j2) => j2.anchor);
+        }
+        const newest = (j2) => Math.max(...[j2.anchor, ...j2.steps].map((i) => Number(i.created_at) || 0));
+        const open2 = jobs.filter((j2) => !finished(j2.anchor) || j2.steps.some((s) => !finished(s)));
+        const shown = (state === "open" ? open2 : jobs).sort((a, b) => newest(b) - newest(a));
+        const what = state === "open" ? "open Claude jobs" : "Claude jobs";
+        if (!shown.length) return `No ${what} in ${p.projectName}.`;
+        const states = await resolvers.stateIndex(p, shown.flatMap((j2) => [j2.anchor, ...j2.steps]).map((i) => i.item_type));
+        const stateOf = (it2) => states.get(it2.state_id)?.name || groupName(it2.state_group) || "?";
+        const lines = [`${Math.min(shown.length, limit)} of ${shown.length} ${what} in ${p.projectName}, newest first:`];
+        for (const j2 of shown.slice(0, limit)) {
+          const done = j2.steps.filter(finished).length;
+          const progress = j2.steps.length ? `${done} of ${j2.steps.length} steps done` : "no steps (tracked on the item itself)";
+          lines.push(`- ${j2.anchor.item_key} "${truncate(j2.anchor.title, 100)}" [${j2.anchor.item_type}, ${stateOf(j2.anchor)}] \u2014 ${progress}${j2.anchor.created_via === "claude" ? "" : " (an item the user named)"} \xB7 ${day(newest(j2))}`);
+          for (const s of j2.steps.slice(0, MAX_STEPS_SHOWN)) lines.push(`    ${s.item_key} ${stateOf(s)} \u2014 ${truncate(s.title, 80)}`);
+          if (j2.steps.length > MAX_STEPS_SHOWN) lines.push(`    \u2026and ${j2.steps.length - MAX_STEPS_SHOWN} more`);
+        }
+        lines.push(`Open one at ${resolvers.projectUrl(p)}/work-items/<KEY>`);
+        return lines.join("\n");
       }
     };
   }
@@ -37767,139 +38119,6 @@ var init_policy = __esm({
   }
 });
 
-// src/writes.js
-import crypto3 from "node:crypto";
-async function resolveAssignees(p, refs, resolvers) {
-  if (!refs.length) return [];
-  const [members2, me2] = await Promise.all([resolvers.members(p), resolvers.me()]);
-  const found = /* @__PURE__ */ new Map();
-  const problems = [];
-  for (const ref of refs) {
-    const who = String(ref).trim().toLowerCase();
-    let matches;
-    if (who === "me") {
-      matches = members2.filter((m) => m.userId === me2.userId);
-      if (!matches.length) problems.push(`you aren't a member of ${p.projectName}`);
-    } else {
-      const byEmail = members2.filter((m) => m.orgEmail?.toLowerCase() === who);
-      matches = byEmail.length ? byEmail : members2.filter((m) => [m.displayName, m.fullName].some((n) => n?.trim().toLowerCase() === who));
-      if (matches.length > 1) {
-        problems.push(`"${ref}" matches several members (${list(matches.map(memberName))}); use their email`);
-      } else if (!matches.length) {
-        const close = members2.filter((m) => `${m.displayName || ""} ${m.fullName || ""}`.toLowerCase().includes(who));
-        const suggest = close.slice(0, 5).map((m) => m.orgEmail ? `${memberName(m)} <${m.orgEmail}>` : memberName(m));
-        problems.push(`"${ref}" isn't a member of ${p.projectName}${suggest.length ? ` (did you mean ${list(suggest)}?)` : ""}`);
-      }
-    }
-    if (matches.length === 1) {
-      const m = matches[0];
-      found.set(m.userId, { empId: m.empId, userId: m.userId, name: m.userId === me2.userId ? "you" : memberName(m) });
-    }
-  }
-  if (problems.length) {
-    throw new OrbitError("invalid", `Nothing was sent: ${problems.join("; ")}. orbit_get_project_config lists the members.`);
-  }
-  return [...found.values()];
-}
-async function resolvePriority(name, resolvers) {
-  const priorities = await resolvers.priorities();
-  const match = priorities.find((x2) => x2.name.toLowerCase() === name.trim().toLowerCase());
-  if (!match) throw new OrbitError("invalid", `There is no priority called "${name}"; use one of ${priorities.map((x2) => x2.name).join(", ")}.`);
-  return match.id;
-}
-async function resolveLabels(p, itemType, names2, resolvers) {
-  const labels = await resolvers.labels(p, itemType);
-  const missing = [];
-  const ids = names2.map((name) => {
-    const match = labels.find((l3) => l3.name.toLowerCase() === name.trim().toLowerCase());
-    if (!match) missing.push(`"${name}"`);
-    return match?.id;
-  });
-  if (missing.length) {
-    throw new OrbitError("invalid", `Nothing was sent: ${p.projectName} has no ${itemType} label ${missing.join(", ")}. ${itemType} labels: ${labels.map((l3) => l3.name).join(", ") || "none"}.`);
-  }
-  return [...new Set(ids)];
-}
-function dayToEpoch(day2) {
-  const [y2, m, d] = day2.split("-").map(Number);
-  const date5 = new Date(y2, m - 1, d);
-  if (date5.getFullYear() !== y2 || date5.getMonth() !== m - 1 || date5.getDate() !== d) {
-    throw new OrbitError("invalid", `"${day2}" isn't a real date (use YYYY-MM-DD).`);
-  }
-  return date5.getTime();
-}
-async function findCreated({ config: config2, client, resolvers }, p, { requestId, count, startedAt, itemType, parentField: parentField2, parentId }) {
-  try {
-    await sleep4(config2.confirmDelayMs);
-    const me2 = await resolvers.me();
-    const listed = await client.call("/work-items/list", {
-      ...resolvers.context(p),
-      author_ids: [me2.userId],
-      created_at_from: startedAt - CLOCK_SLACK_MS,
-      item_types: [itemType],
-      ...parentField2 && { [parentField2]: parentId },
-      from: 0,
-      size: count * 2,
-      sort_by: "created_at",
-      sort_order: "desc"
-    });
-    const candidates = await Promise.all((listed?.items || []).map((c) => client.call("/work-items/get", { ...resolvers.context(p), item_id: c.id }).catch(() => null)));
-    const found = /* @__PURE__ */ new Map();
-    for (const it2 of candidates) {
-      const m = it2?.metadata;
-      if (m?.mcp_request_id === requestId && Number.isInteger(m.mcp_index)) found.set(m.mcp_index, it2);
-    }
-    return found;
-  } catch (err) {
-    log("warn", "could not check what an unknown create left behind", { error: err.message });
-    return null;
-  }
-}
-async function postComment({ config: config2, client, resolvers }, p, item, html) {
-  const startedAt = Date.now();
-  try {
-    await client.call("/work-items/comments/add", { ...resolvers.context(p), item_id: item.id, content: html });
-    return "posted";
-  } catch (err) {
-    if (!isUnknown(err)) throw err;
-  }
-  try {
-    await sleep4(config2.confirmDelayMs);
-    const [me2, data] = await Promise.all([
-      resolvers.me(),
-      client.call("/work-items/comments/list", { ...resolvers.context(p), item_id: item.id, from: 0, size: 20, sort_order: "desc" })
-    ]);
-    const text = htmlToText(html);
-    const landed = (data?.comments || []).some((c) => c.author?.user_id === me2.userId && Number(c.created_at) >= startedAt - CLOCK_SLACK_MS && htmlToText(c.content) === text);
-    return landed ? "found" : "not_confirmed";
-  } catch (err) {
-    log("warn", "could not check whether an unknown comment landed", { error: err.message });
-    return "not_confirmed";
-  }
-}
-async function retryOnceIfUnknown(fn2) {
-  try {
-    return await fn2();
-  } catch (err) {
-    if (!isUnknown(err)) throw err;
-    log("info", "unknown outcome on an update; retrying once", { error: err.message });
-    return fn2();
-  }
-}
-var sleep4, CLOCK_SLACK_MS, newRequestId, isUnknown, memberName;
-var init_writes = __esm({
-  "src/writes.js"() {
-    init_errors3();
-    init_format();
-    init_log();
-    sleep4 = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-    CLOCK_SLACK_MS = 6e4;
-    newRequestId = () => crypto3.randomUUID();
-    isUnknown = (err) => err instanceof OrbitError && err.kind === "unknown";
-    memberName = (m) => m.displayName || m.fullName || m.orgEmail || "a member";
-  }
-});
-
 // src/tools/createWorkItem.js
 var createWorkItem_default;
 var init_createWorkItem = __esm({
@@ -37921,9 +38140,11 @@ var init_createWorkItem = __esm({
         item_type: external_exports.enum(["task", "story", "feature", "epic"]).default("task").describe("Default task, which is right for a job's parent. Use story, feature or epic only when the user asks for that type by name."),
         parent: external_exports.string().trim().min(1).optional().describe("An item key to put the new item under: a story, feature or epic, or a task that isn't itself a subtask (which makes the new task its subtask). Omit for a top-level item."),
         assignees: assigneesField.default(["me"]),
-        priority: external_exports.string().trim().min(1).optional().describe('A priority name such as "High".'),
+        labels: labelsField.optional(),
+        priority: priorityField.optional(),
         start_date: dayField.optional().describe("YYYY-MM-DD"),
-        due_date: dayField.optional().describe("YYYY-MM-DD")
+        due_date: dayField.optional().describe("YYYY-MM-DD"),
+        fields: fieldsField.optional()
       }),
       readOnly: false,
       async handler(args, orbit2) {
@@ -37931,9 +38152,11 @@ var init_createWorkItem = __esm({
         const p = await resolvers.project(args.project);
         const parent = args.parent ? await resolvers.item(p, args.parent) : null;
         const field = parent ? parentField(args.item_type, parent) : null;
-        const [people, priorityId] = await Promise.all([
+        const [people, labelIds, priorityId, customFields] = await Promise.all([
           resolveAssignees(p, args.assignees, resolvers),
-          args.priority ? resolvePriority(args.priority, resolvers) : void 0
+          args.labels ? resolveLabels(p, args.item_type, args.labels, resolvers) : void 0,
+          args.priority ? resolvePriority(args.priority, resolvers) : void 0,
+          resolveCustomFields(p, args.item_type, args.fields, resolvers)
         ]);
         const requestId = newRequestId();
         const body = {
@@ -37943,12 +38166,14 @@ var init_createWorkItem = __esm({
           ...args.description && { description: markdownToHtml(args.description) },
           assignees_arr: people.map((m) => m.empId),
           ...field && { [field]: parent.id },
+          ...labelIds && { label_ids: labelIds },
           ...priorityId !== void 0 && { priority_id: priorityId },
           ...args.start_date && { start_date: dayToEpoch(args.start_date) },
           ...args.due_date && { due_date: dayToEpoch(args.due_date) },
+          ...customFields.values.length && { custom_fields: customFields.values },
           metadata: { mcp_request_id: requestId, mcp_index: 0 }
         };
-        const summary = (key) => `${key} [${args.item_type}] "${truncate(args.title, 120)}"${parent ? ` under ${parent.item_key}` : ""}, ${people.length ? `assigned to ${list(people.map((m) => m.name))}` : "unassigned"}: ${resolvers.itemUrl(p, { item_type: args.item_type, item_key: key })}`;
+        const summary = (key) => `${key} [${args.item_type}] "${truncate(args.title, 120)}"${parent ? ` under ${parent.item_key}` : ""}, ${people.length ? `assigned to ${list(people.map((m) => m.name))}` : "unassigned"}${labelsAndPriority(args)}: ${resolvers.itemUrl(p, { item_type: args.item_type, item_key: key })}` + unseenNote(customFields.unseen);
         const startedAt = Date.now();
         try {
           const created = await client.call("/work-items/create", body);
@@ -37976,7 +38201,7 @@ var init_createWorkItem = __esm({
 });
 
 // src/tools/createWorkItems.js
-var MAX_STEPS, createWorkItems_default;
+var MAX_STEPS_PER_CALL, createWorkItems_default;
 var init_createWorkItems = __esm({
   "src/tools/createWorkItems.js"() {
     init_zod();
@@ -37984,20 +38209,25 @@ var init_createWorkItems = __esm({
     init_policy();
     init_writes();
     init_format();
+    init_config();
+    init_errors3();
     init_shared();
-    MAX_STEPS = 25;
+    MAX_STEPS_PER_CALL = 25;
     createWorkItems_default = {
       name: "orbit_create_work_items",
       title: "Create the steps of a job",
-      description: `Create the steps of a job under one named item, in a single call: one item per plan step (at most ${MAX_STEPS}; aim for 15 or fewer and merge small steps). How they attach depends on the named item: tasks under a story, feature or epic; subtasks under a task that isn't itself a subtask (it may sit under a story, feature or epic). A subtask can't hold steps: then nothing is created, and you track the job on that subtask with comments. If the parent already has children (orbit_get_work_item lists them), create only the steps that are missing. Each step gets its own result line. Never create steps marked "not confirmed" again.`,
+      description: `Create the steps of a job under one named item, in a single call: one item per plan step. A job has at most ${MAX_STEPS_PER_JOB} steps from Claude, counting the ones already under the item: plan ${MAX_STEPS_PER_JOB} or fewer, and group smaller pieces into one step with the details in its description. How they attach depends on the named item: tasks under a story, feature or epic; subtasks under a task that isn't itself a subtask (it may sit under a story, feature or epic). A subtask can't hold steps: then nothing is created, and you track the job on that subtask with comments. If the parent already has children (orbit_get_work_item lists them), create only the steps that are missing. Each step gets its own result line. Never create steps marked "not confirmed" again.`,
       inputSchema: external_exports.object({
         project: projectField,
         parent: itemField.describe('The item the job belongs to, as a key like "SBX-142": the parent task you created, or the item the user named.'),
         steps: external_exports.array(external_exports.object({
           title: titleField,
           description: markdownField.optional().describe("Markdown, optional: a line or two about the step.")
-        })).min(1).max(MAX_STEPS),
-        assignees: assigneesField.default(["me"])
+        })).min(1).max(MAX_STEPS_PER_CALL),
+        assignees: assigneesField.default(["me"]),
+        labels: labelsField.optional().describe("Label names for every step. Steps are tasks: pass .orbit.json's defaults.task.labels and any the user asked for; orbit_get_project_config lists the task labels."),
+        priority: priorityField.optional().describe(`A priority name such as "High", for every step. Pass .orbit.json's defaults.task.priority when it is set, unless the user asked for another.`),
+        fields: fieldsField.optional().describe("Custom field values for every step, by field name (see orbit_create_work_item). Steps are tasks: pass .orbit.json's defaults.task.fields and any the user gave; never guess one.")
       }),
       readOnly: false,
       async handler(args, orbit2) {
@@ -38008,7 +38238,18 @@ var init_createWorkItems = __esm({
         if (!attach) {
           return `${parent.item_key} "${truncate(parent.title, 100)}" is a subtask, and Orbit allows only one level of subtasks, so no steps were created. Track this job on ${parent.item_key} itself: comment as you finish each step (orbit_add_comment) and move it with orbit_set_status.`;
         }
-        const people = await resolveAssignees(p, args.assignees, resolvers);
+        const [people, labelIds, priorityId, customFields, existing] = await Promise.all([
+          resolveAssignees(p, args.assignees, resolvers),
+          args.labels ? resolveLabels(p, attach.itemType, args.labels, resolvers) : void 0,
+          args.priority ? resolvePriority(args.priority, resolvers) : void 0,
+          resolveCustomFields(p, attach.itemType, args.fields, resolvers),
+          client.call("/work-items/children", { ...resolvers.context(p), item_id: parent.id })
+        ]);
+        const claudeSteps = (existing?.children || []).filter((c) => c.created_via === "claude").length;
+        if (claudeSteps + args.steps.length > MAX_STEPS_PER_JOB) {
+          const room = Math.max(MAX_STEPS_PER_JOB - claudeSteps, 0);
+          throw new OrbitError("invalid", `Nothing was sent: a job has at most ${MAX_STEPS_PER_JOB} steps from Claude, and ${parent.item_key} ${claudeSteps ? `already has ${claudeSteps}` : "has none yet"}, so ${room ? `${room} more fit` : "no more fit"}. ` + (room ? `Merge these ${args.steps.length} into ${room} or fewer, with the details in each step's description.` : "Fold the extra work into the existing steps (comment on them) instead of adding new ones."));
+        }
         const requestId = newRequestId();
         const items = args.steps.map((step, i) => ({
           item_type: attach.itemType,
@@ -38016,9 +38257,12 @@ var init_createWorkItems = __esm({
           ...step.description && { description: markdownToHtml(step.description) },
           assignees_arr: people.map((m) => m.empId),
           [attach.field]: parent.id,
+          ...labelIds && { label_ids: labelIds },
+          ...priorityId !== void 0 && { priority_id: priorityId },
+          ...customFields.values.length && { custom_fields: customFields.values },
           metadata: { mcp_request_id: requestId, mcp_index: i }
         }));
-        const what = (n) => `${n} of ${items.length} steps as ${attach.kind} of ${parent.item_key} "${truncate(parent.title, 100)}", ${people.length ? `assigned to ${list(people.map((m) => m.name))}` : "unassigned"}`;
+        const what = (n) => `${n} of ${items.length} steps as ${attach.kind} of ${parent.item_key} "${truncate(parent.title, 100)}", ${people.length ? `assigned to ${list(people.map((m) => m.name))}` : "unassigned"}${labelsAndPriority(args)}`;
         const ok = (i, key) => `#${i + 1} \u2713 ${key} ${truncate(args.steps[i].title, 100)}`;
         const unconfirmed = (i) => `#${i + 1} ? not confirmed: ${truncate(args.steps[i].title, 100)}`;
         const parentLink = resolvers.itemUrl(p, parent);
@@ -38067,7 +38311,7 @@ var init_createWorkItems = __esm({
             ...lines,
             ...failed.length ? [`${failed.join(", ")} failed; the others exist. Retry only those, in a new call, and only if the error is about something you sent (a title, a name) and you fixed it. Otherwise tell the user.`] : [],
             ...created + failed.length < items.length ? ["Don't create the unconfirmed steps again."] : [],
-            `Parent: ${parentLink}`
+            `Parent: ${parentLink}${unseenNote(customFields.unseen)}`
           ].join("\n")
         };
       }
@@ -38392,6 +38636,7 @@ var init_tools = __esm({
     init_resolveUrl();
     init_getProjectConfig();
     init_searchWorkItems();
+    init_listJobs();
     init_getWorkItem();
     init_listComments();
     init_createWorkItem();
@@ -38406,6 +38651,7 @@ var init_tools = __esm({
       resolveUrl_default,
       getProjectConfig_default,
       searchWorkItems_default,
+      listJobs_default,
       getWorkItem_default,
       listComments_default,
       createWorkItem_default,

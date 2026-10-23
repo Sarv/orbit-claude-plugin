@@ -20,7 +20,11 @@ Project URL: $ARGUMENTS
 4. Ask the user which state is the **review state**: where Claude puts finished work it isn't allowed
    to close (for example, items that carry points). Offer only the task states in the `started`
    group, plus "none". If one of them has "review" in its name, suggest it.
-5. Find the repo root with `git rev-parse --show-toplevel` (if that fails, use the current folder).
+5. In the "Custom fields" lines, find the fields marked `required` that have no default. Claude can't
+   create a task without them, so ask the user for one value each, offering the choices the line
+   shows (a date as YYYY-MM-DD, a person by email). Never guess a value. Skip this step when there
+   are none.
+6. Find the repo root with `git rev-parse --show-toplevel` (if that fails, use the current folder).
    Write `.orbit.json` there, replacing any earlier one, with exactly these fields:
 
    ```json
@@ -29,10 +33,14 @@ Project URL: $ARGUMENTS
      "org_id": "<org_id>",
      "workspace_id": "<workspace_id>",
      "project_id": "<project_id>",
-     "review_state": "<the chosen state's name, or null for none>"
+     "review_state": "<the chosen state's name, or null for none>",
+     "defaults": { "task": { "fields": { "<field name>": "<the user's value>" } } }
    }
    ```
 
-6. Tell the user, in two lines, that the repo is linked to the project (by name), and that they should
-   commit `.orbit.json` so the whole team shares the link. It holds no secrets: each person's sign-in
-   stays on their own computer.
+   Leave out `defaults` when step 5 asked nothing. If the earlier file had the same `project_id`,
+   keep its `confirm_plan` and each item type's `labels` and `priority` under `defaults`; a link to
+   another project starts without them.
+7. Tell the user, in two lines, that the repo is linked to the project (by name), with the values
+   step 5 saved if any, and that they should commit `.orbit.json` so the whole team shares the link.
+   It holds no secrets: each person's sign-in stays on their own computer.

@@ -57,8 +57,9 @@ trusts the folder) gets the plugin without typing the commands above:
    ```
 
    It asks which state is the "review state": where Claude puts finished work it isn't allowed to
-   close. Then it writes `.orbit.json` at the repo root. **Commit it**, so the whole team shares the
-   link. It holds no secrets.
+   close. If the project has required fields with no default (say, "Client"), it also asks for their
+   values once, and Claude fills them on every task. Then it writes `.orbit.json` at the repo root.
+   **Commit it**, so the whole team shares the link. It holds no secrets.
 
 2. **Work as usual.** The first time Claude needs Orbit, your browser opens an Orbit page asking to
    allow Claude Code. You're already signed in, so you click **Allow** once. That's all. The sign-in
@@ -67,9 +68,27 @@ trusts the folder) gets the plugin without typing the commands above:
 | Command | What it does |
 |---|---|
 | `/orbit:link <project URL>` | Link this repo to an Orbit project (writes `.orbit.json`) |
-| `/orbit:status` | Your open items in the linked project |
+| `/orbit:status` | Your open items in the linked project, and Claude's jobs in progress |
+| `/orbit:undo [item key]` | Cancel Claude's most recent job there (its parent and steps), after you confirm. With a key, that job instead |
 | `/orbit:login` | Connect now, or check which Orbit account Claude Code uses |
 | `/orbit:logout` | Disconnect this computer from Orbit and forget the sign-in |
+
+### Per-repo settings
+
+`.orbit.json` holds the link and a few optional settings for everyone who works in the repo. Ask
+Claude to change them ("label this repo's tasks backend", "show me the plan before creating Orbit
+items"), or edit the file, then commit it.
+
+| Key | What it does |
+|---|---|
+| `project`, `org_id`, `workspace_id`, `project_id` | The linked project (written by `/orbit:link`) |
+| `review_state` | Where Claude puts finished work it isn't allowed to close |
+| `confirm_plan` | `true`: before creating anything in Orbit, Claude shows the parent and the steps and waits for your OK. Off by default |
+| `defaults.task.fields` | Values for the project's required fields, by field name (`{"Client": "Acme"}`) |
+| `defaults.task.labels` | Labels on every task Claude creates (`["backend"]`) |
+| `defaults.task.priority` | Priority of every task Claude creates (`"High"`) |
+
+`defaults` is grouped by item type; `task` covers a job's parent and its steps.
 
 You can also see and disconnect every place Claude Code is connected on Orbit's **Connected apps**
 page (avatar menu). Changing your Orbit password disconnects all of them.
@@ -86,5 +105,8 @@ page (avatar menu). Changing your Orbit password disconnects all of them.
 | A new version doesn't arrive | Turn on auto-update ("Get it", step 3), or run `/plugin marketplace update sarv`, then restart Claude Code |
 | "You don't have permission to do that in this project" | Claude acts with your own Orbit permissions. Check you're a member of the project and your role can create and edit work items |
 | Items wait in the review state with a "handed to a person" comment | Expected: Claude doesn't close items it didn't create, or items that carry points. Close them yourself in Orbit |
+| Claude asks for a field's value, or says the project needs fields | The project has required fields with no default. Give Claude the value, or run `/orbit:link` again to save it for the repo |
+| "Nothing was sent: … has no task label" or "There is no priority called …" | A name in `.orbit.json` `defaults` doesn't exist in the project (any more). Ask Claude to change the repo's default labels or priority, or fix the file |
+| "This project has required fields you don't have access to" | Your role can't see the project's custom fields, so Claude can't fill them. Ask a project admin to give those fields a default value |
 | Items land in the wrong Orbit (dev vs production) | `ORBIT_API_URL` / `ORBIT_APP_URL` in the shell where Claude Code started decide which one. Unset, it's production |
 | You need a different Orbit account | `/orbit:logout`, then `/orbit:login`: the Allow page lets you switch account |

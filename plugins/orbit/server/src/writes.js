@@ -82,6 +82,103 @@ export async function resolveLabels(p, itemType, names, resolvers) {
   return [...new Set(ids)];
 }
 
+// ─── Custom fields ─────────────────────────────────────────────────────────────────────────────
+
+const FIELD_KINDS = {
+  text: 'text', number: 'a number', date: 'a date (YYYY-MM-DD)', boolean: 'yes or no',
+  single_select: 'one of', multi_select: 'any of', user: 'a project member', attachment: 'a file',
+};
+const MAX_OPTIONS_SHOWN = 15;
+const optionLabels = (def) => (def.options || []).map((o) => o.label);
+
+/** What a field takes, for messages: "one of: Acme, Globex" or "a date (YYYY-MM-DD)". */
+export function fieldHint(def) {
+  if (def.field_type !== 'single_select' && def.field_type !== 'multi_select') return FIELD_KINDS[def.field_type] || def.field_type;
+  const labels = optionLabels(def);
+  return `${FIELD_KINDS[def.field_type]}: ${labels.slice(0, MAX_OPTIONS_SHOWN).join(', ')}${labels.length > MAX_OPTIONS_SHOWN ? ', …' : ''}`;
+}
+
+// Orbit fills any default that isn't null/undefined, and a filled default satisfies "required".
+export const hasDefault = (def) => def.default_value !== null && def.default_value !== undefined;
+
+const option = (def, label) => (def.options || []).find((o) => o.label.toLowerCase() === String(label).trim().toLowerCase()
+  || o.id === String(label).trim());
+
+/** One value Claude gave → what Orbit stores for that field type: { value } or { problem }. */
+async function fieldValue(def, raw, p, resolvers) {
+  const bad = (what) => ({ problem: `${def.name} takes ${what}, not ${JSON.stringify(raw)}` });
+  switch (def.field_type) {
+    case 'text': return typeof raw === 'string' ? { value: raw.trim() } : bad('text');
+    case 'number': {
+      const n = typeof raw === 'number' ? raw : Number(String(raw).trim());
+      return String(raw).trim() !== '' && Number.isFinite(n) ? { value: n } : bad('a number');
+    }
+    case 'boolean': {
+      const yes = ['true', 'yes'], no = ['false', 'no'];
+      const s = String(raw).trim().toLowerCase();
+      return yes.includes(s) ? { value: true } : no.includes(s) ? { value: false } : bad('yes or no');
+    }
+    case 'date': {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(raw))) return bad('a date (YYYY-MM-DD)');
+      try { return { value: dayToEpoch(String(raw)) }; } catch (err) { return { problem: `${def.name}: ${err.message}` }; }
+    }
+    case 'single_select': {
+      const o = typeof raw === 'string' ? option(def, raw) : null;
+      return o ? { value: o.id } : { problem: `${JSON.stringify(raw)} isn't an option of ${def.name} (${fieldHint(def)})` };
+    }
+    case 'multi_select': {
+      const labels = Array.isArray(raw) ? raw : [raw];
+      const found = labels.map((l) => option(def, l));
+      const unknown = labels.filter((_, i) => !found[i]);
+      return unknown.length
+        ? { problem: `${unknown.map((l) => JSON.stringify(l)).join(', ')} isn't an option of ${def.name} (${fieldHint(def)})` }
+        : { value: [...new Set(found.map((o) => o.id))] };
+    }
+    case 'user': {
+      if (typeof raw !== 'string') return bad('a project member');
+      const [person] = await resolveAssignees(p, [raw], resolvers); // refuses a non-member, as for assignees
+      return { value: person.empId };
+    }
+    default: return { problem: `${def.name} is a ${def.field_type === 'attachment' ? 'file' : def.field_type} field, which Claude can't set` };
+  }
+}
+
+/**
+ * Custom field values by name ({ "Client": "Acme" }) → Orbit's [{ field_id, value }] for one item
+ * type, checked BEFORE anything is sent: unknown names and options, wrong types, and any required
+ * field that has neither a value here nor a default (Orbit fills defaults itself, and refuses a
+ * required field left empty). Returns { values, unseen }: when Orbit lists no fields to this user
+ * (a CONTRIBUTOR can't see them), nothing is checked or sent and `unseen` names what was given;
+ * Orbit then applies the defaults and refuses anything still missing.
+ */
+export async function resolveCustomFields(p, itemType, fields, resolvers) {
+  const defs = await resolvers.customFields(p, itemType);
+  const given = Object.entries(fields || {});
+  if (!defs.length) return { values: [], unseen: given.map(([name]) => name) };
+
+  const byName = new Map(defs.map((d) => [d.name.trim().toLowerCase(), d]));
+  const values = [];
+  const problems = [];
+  for (const [name, raw] of given) {
+    const def = byName.get(name.trim().toLowerCase());
+    if (!def) {
+      problems.push(`"${name}" isn't a ${itemType} field in ${p.projectName} (fields: ${list(defs.map((d) => d.name))})`);
+      continue;
+    }
+    const out = await fieldValue(def, raw, p, resolvers);
+    if (out.problem) problems.push(out.problem);
+    else values.push({ field_id: def.id, value: out.value });
+  }
+  const sent = new Set(values.map((v) => v.field_id));
+  const missing = defs.filter((d) => d.is_required && !hasDefault(d) && !sent.has(d.id) && !given.some(([n]) => byName.get(n.trim().toLowerCase()) === d));
+  if (missing.length) {
+    problems.push(`${p.projectName} needs these ${itemType} fields, which have no default: `
+      + `${missing.map((d) => `${d.name} (${fieldHint(d)})`).join('; ')}. Ask the user for the values (never guess), then pass them in "fields"`);
+  }
+  if (problems.length) throw new OrbitError('invalid', `Nothing was sent: ${problems.join('; ')}.`);
+  return { values, unseen: [] };
+}
+
 /** "2026-10-25" → epoch millis at local midnight, as Orbit's web app sends a picked date. */
 export function dayToEpoch(day) {
   const [y, m, d] = day.split('-').map(Number);

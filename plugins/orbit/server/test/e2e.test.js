@@ -74,12 +74,12 @@ after(async () => {
   await orbit.close();
 });
 
-const READ_TOOLS = ['orbit_get_project_config', 'orbit_get_work_item', 'orbit_list_comments', 'orbit_list_projects',
-  'orbit_resolve_url', 'orbit_search_work_items', 'orbit_whoami'];
+const READ_TOOLS = ['orbit_get_project_config', 'orbit_get_work_item', 'orbit_list_comments', 'orbit_list_jobs',
+  'orbit_list_projects', 'orbit_resolve_url', 'orbit_search_work_items', 'orbit_whoami'];
 const WRITE_TOOLS = ['orbit_add_comment', 'orbit_create_work_item', 'orbit_create_work_items', 'orbit_logout',
   'orbit_set_status', 'orbit_update_work_item'];
 
-test('handshake and the 13 tools: 7 read, 5 write + logout, none destructive', async () => {
+test('handshake and the 14 tools: 8 read, 5 write + logout, none destructive', async () => {
   const init = await server.initialize();
   assert.equal(init.result.serverInfo.name, 'orbit');
   const { result } = await server.listTools();
